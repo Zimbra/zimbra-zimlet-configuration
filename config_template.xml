@@ -1,0 +1,6 @@
+<zimletConfig name="zm-zimlet-configuration" version="0.0.1">
+    <global>
+        <property name="configPropertyName">valueOfConfig</property>
+        <property name="Hello">World</property>
+    </global>
+</zimletConfig>
