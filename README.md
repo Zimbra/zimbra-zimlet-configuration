@@ -46,6 +46,7 @@ https://github.com/Zimbra/zimbra-zimlet-configuration/releases/download/0.0.1/zm
 
 Deploy the example Zimlet like so:
 
+      cd /tmp
       wget https://github.com/Zimbra/zimbra-zimlet-configuration/releases/download/0.0.1/zm-zimlet-configuration.zip
       zmzimletctl deploy /tmp/zm-zimlet-configuration.zip
 
@@ -56,8 +57,6 @@ To make changes to the configuration one first gets the configuration template:
 Review and make changes to /tmp/myconfig.xml using vi or nano and deploy using:
 
       zmzimletctl configure  /tmp/myconfig.xml
-
-Please note that it is not possible to side-load config_template.xml files. So you must always deploy an actual Zimlet to read the configuration properties.
 
 ## Using configuration properties in a Zimlet
 
@@ -84,9 +83,61 @@ export default class MoreMenu extends Component {
         const zimlets = this.zimletContext.getAccount().zimlets
         this.globalConfig = new Map();
         //Get demo zimlet
-        const zimlet = zimlets.zimlet.find(zimlet => zimlet.zimlet[0].name === "zm-zimlet-configuration");
+        let zimlet = zimlets.zimlet.find(zimlet => zimlet.zimlet[0].name === "zm-zimlet-configuration");
+        
+        /*Zimbra Zimlet Sideloader does not support reading Zimlet configuration xml's, 
+         * so to read a configuration you must either package and deploy the Zimlet using zmzimletctl 
+         * or use this work around so you can develop with Sideloader. This will help if you have not 
+         * made a final decision on what properties you want in your config_template.xml and what to 
+         * develop them on-the-fly.
+         * 
+         * IT IS ***STRONGLY*** ADVISED TO NOT USE THIS WORKAROUND IN PRODUCTION:
+         * */
+        if (!zimlet) {
+           zimlets.zimlet.push(
+              {
+                 "__typename": "AccountZimletInfo",
+                 "zimletContext": null,
+                 "zimlet": [
+                    {
+                       "__typename": "AccountZimletDesc",
+                       "name": "zm-zimlet-configuration",
+                       "label": null,
+                       "zimbraXZimletCompatibleSemVer": null,
+                       "description": null
+                    }
+                 ],
+                 "zimletConfig": [
+                    {
+                       "__typename": "AccountZimletConfigInfo",
+                       "global": [
+                          {
+                             "__typename": "ZimletConfigGlobal",
+                             "property": [
+                                {
+                                   "__typename": "ZimletConfigProperty",
+                                   "name": "property1",
+                                   "content": "property1 read from work-around"
+                                 },                                 {
+                                   "__typename": "ZimletConfigProperty",
+                                   "name": "property2",
+                                   "content": "property2 read from work-around"
+                                }
+                             ]
+                          }
+                       ],
+                       "host": null,
+                       "property": null,
+                       "name": "zm-zimlet-configuration",
+                       "version": null
+                    }
+                 ]
+              });
+           zimlet = zimlets.zimlet.find(zimlet => zimlet.zimlet[0].name === "zm-zimlet-configuration");
+        }
+        /*end sideloader work-around*/
 
-        //Add all demo zimlet configuration properties to an ES6 Map
+        //Add all demo zimlet configuration properties to an ES6 Map from the Zimbra server
         if (zimlet) {
             const globalConfig = zimlet.zimletConfig[0].global[0].property || [];
             for (var i = 0; i < globalConfig.length; i++) {
@@ -120,7 +171,6 @@ export default class MoreMenu extends Component {
         );
     }
 }
-
 ```
 
 ## References
